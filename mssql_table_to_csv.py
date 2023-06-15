@@ -9,7 +9,7 @@ table_name = ''
 username = ''
 password = ''
 
-output_file = '\\BRSAOPRDNASD\BR-D-FDADocumentation\BKG\Projects\CHRONOS\04 - Reports\10 - Cargas\03 - Doacoes\20230607\03 - Export BIS\Doacoes_2023.csv'
+output_file = '.csv'
 
 # Establishing a connection to the SQL Server database with the fast_executemany option
 if username != '':  
