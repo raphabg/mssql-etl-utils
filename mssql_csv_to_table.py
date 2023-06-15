@@ -28,7 +28,7 @@ cursor = connection.cursor()
 insert_query = f"INSERT INTO {table_name} VALUES ({', '.join(['?'] * len(column_names))})"
 
 # Open the CSV file
-with open(csv_file_path, 'r', newline='') as csv_file:
+with open(csv_file_path, 'r', newline='', encoding='utf-8') as csv_file:
     reader = csv.reader(csv_file)
 
     # Read the column names from the first row
