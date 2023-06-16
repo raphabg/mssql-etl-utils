@@ -12,7 +12,9 @@ driver = ''  # Adjust the driver based on your SQL Server version
 # CSV file details
 csv_file = r''
 encoding = 'utf-8'
+schema = 'dbo'
 table_name = ''
+chunksize = 80000
 
 # Create SQL Server connection
 if username != '':
@@ -23,8 +25,6 @@ else:
 connection_url = URL.create("mssql+pyodbc", query={"odbc_connect": connection_string})
 engine = create_engine(connection_url, echo=False, fast_executemany=True)
 
-# Read CSV file using pandas and automatically detect column data types
-chunksize = 80000
 df = pd.read_csv(csv_file, dtype=str, encoding=encoding, chunksize=chunksize)
 
 counter = 0
@@ -35,7 +35,7 @@ with tqdm(unit='rows') as progress_bar:
         if (i == 0):
             if_exists = 'replace'
 
-        chunk.to_sql(table_name, engine, 'dbo', if_exists, index=False)
+        chunk.to_sql(table_name, engine, schema, if_exists, index=False)
 
         rowCount = chunk.shape[0]
         counter += rowCount
