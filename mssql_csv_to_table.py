@@ -1,61 +1,47 @@
-import csv
-import pyodbc
+import pandas as pd
+from sqlalchemy import create_engine, URL
+from tqdm import tqdm
 
-# Database connection details
-
-# Database connection details
+# SQL Server connection details
 server = ''
 database = ''
-table_name = ''
 username = ''
 password = ''
+driver = ''  # Adjust the driver based on your SQL Server version
 
-csv_file_path = '.csv'
+# CSV file details
+csv_file = r''
+encoding = 'utf-8'
+table_name = ''
 
-# Establishing a connection to the SQL Server database with the fast_executemany option
+# Create SQL Server connection
 if username != '':
-    connection_string = f'DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};UID={username};PWD={password};fast_executemany=on'
+    connection_string = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password}'
 else:
-    connection_string = f'DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};Trusted_Connection=Yes;fast_executemany=on'
+    connection_string = f'DRIVER={driver};SERVER={server};DATABASE={database};Trusted_Connection=Yes'
+
+connection_url = URL.create("mssql+pyodbc", query={"odbc_connect": connection_string})
+engine = create_engine(connection_url, echo=False, fast_executemany=True)
+
+# Read CSV file using pandas and automatically detect column data types
+chunksize = 80000
+df = pd.read_csv(csv_file, dtype=str, encoding=encoding, chunksize=chunksize)
+
+counter = 0
+with tqdm(unit='rows') as progress_bar:
+    for i, chunk in enumerate(df):
+        if_exists = 'append'
+
+        if (i == 0):
+            if_exists = 'replace'
+
+        chunk.to_sql(table_name, engine, 'dbo', if_exists, index=False)
+
+        rowCount = chunk.shape[0]
+        counter += rowCount
+
+        progress_bar.update(len(counter))
+        progress_bar.set_description(f'Progress: {counter})')
 
 
-connection = pyodbc.connect(connection_string)
-
-# Creating a cursor to execute SQL queries
-cursor = connection.cursor()
-
-# Create the SQL INSERT query
-insert_query = f"INSERT INTO {table_name} VALUES ({', '.join(['?'] * len(column_names))})"
-
-# Open the CSV file
-with open(csv_file_path, 'r', newline='', encoding='utf-8') as csv_file:
-    reader = csv.reader(csv_file)
-
-    # Read the column names from the first row
-    column_names = next(reader)
-
-    # Prepare the SQL INSERT statement
-    insert_statement = pyodbc.prepare(cursor, insert_query)
-
-    # Read and insert the data rows
-    rows = []
-    batch_size = 1000  # Adjust the batch size as needed
-    for row in reader:
-        rows.append(row)
-
-        # Insert a batch of rows
-        if len(rows) >= batch_size:
-            cursor.executemany(insert_statement, rows)
-            connection.commit()
-            rows = []
-
-    # Insert any remaining rows
-    if rows:
-        cursor.executemany(insert_statement, rows)
-        connection.commit()
-
-# Closing the cursor and the database connection
-cursor.close()
-connection.close()
-
-print('Data imported successfully.')
+print("CSV data inserted into the SQL Server table.")
